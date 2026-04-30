@@ -33,6 +33,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setIsAdmin(admin);
       }
       setLoading(false);
+    }).catch(err => {
+      console.error("[AuthContext] Error getting session:", err);
+      setLoading(false); // Ensure loading stops even on failure
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
