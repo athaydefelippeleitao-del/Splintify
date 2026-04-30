@@ -67,6 +67,7 @@ export default function MainContent({
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
   const [adminCode, setAdminCode] = useState('');
   const [adminError, setAdminError] = useState('');
+  const [debugMsg, setDebugMsg] = useState('');
   const [tempBirthDate, setTempBirthDate] = useState(birthDate);
   const [tempCountry, setTempCountry] = useState(country);
   const [searchQuery, setSearchQuery] = useState('');
@@ -95,19 +96,27 @@ export default function MainContent({
   };
 
   const handleActivateAdmin = async () => {
+    setDebugMsg('Iniciando...');
     if (adminCode.trim() === 'SPLINTIFY_ADMIN') {
       try {
         if (user) {
+          setDebugMsg('Usuário detectado. Chamando makeAdmin...');
           await makeAdmin(user.id);
+          setDebugMsg('makeAdmin finalizado. Chamando activateAdmin...');
           await activateAdmin();
+          setDebugMsg('Tudo certo!');
           setAdminError('');
           setAdminCode('');
           alert("Você agora é um administrador do Splintify!");
+        } else {
+          setDebugMsg('Usuário é nulo!');
         }
-      } catch (err) {
+      } catch (err: any) {
+        setDebugMsg('Erro capturado: ' + err.message);
         setAdminError("Erro ao promover conta.");
       }
     } else {
+      setDebugMsg('Código inválido (tamanho: ' + adminCode.length + ')');
       setAdminError("Código inválido.");
     }
   };
@@ -1031,7 +1040,10 @@ export default function MainContent({
             >
               Ativar Modo Admin
             </button>
-            {adminError && <span className="text-red-500 text-sm font-bold">{adminError}</span>}
+            <div className="flex flex-col">
+              {adminError && <span className="text-red-500 text-sm font-bold">{adminError}</span>}
+              {debugMsg && <span className="text-zinc-500 text-xs mt-1">Debug: {debugMsg}</span>}
+            </div>
           </div>
         ) : (
           <div className="flex items-center gap-2 text-emerald-500 font-bold bg-emerald-500/10 p-3 rounded-lg border border-emerald-500/20">
