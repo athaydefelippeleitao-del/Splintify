@@ -292,6 +292,33 @@ export default function AdminPanel({ tracks, onClose }: AdminPanelProps) {
     }
   };
 
+  const handleDeleteTrack = async (id: string) => {
+    if (!window.confirm("Tem certeza que deseja excluir esta música?")) return;
+    try {
+      await deleteTrack(id);
+    } catch (err: any) {
+      alert("Erro ao excluir música: " + err.message);
+    }
+  };
+
+  const handleDeleteArtist = async (id: string) => {
+    if (!window.confirm("Tem certeza que deseja excluir este artista?")) return;
+    try {
+      await deleteArtist(id);
+    } catch (err: any) {
+      alert("Erro ao excluir artista: " + err.message);
+    }
+  };
+
+  const handleDeleteCategory = async (id: string) => {
+    if (!window.confirm("Tem certeza que deseja excluir este ritmo?")) return;
+    try {
+      await deleteCategory(id);
+    } catch (err: any) {
+      alert("Erro ao excluir ritmo: " + err.message);
+    }
+  };
+
   const handleCategorySubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
@@ -544,7 +571,7 @@ export default function AdminPanel({ tracks, onClose }: AdminPanelProps) {
                       </div>
                       <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                         <button onClick={() => handleEditTrack(track)} className="p-2 text-zinc-400 hover:text-emerald-500 transition-colors"><Edit2 size={18} /></button>
-                        <button onClick={() => deleteTrack(track.id)} className="p-2 text-zinc-400 hover:text-red-500 transition-colors"><Trash2 size={18} /></button>
+                        <button onClick={() => handleDeleteTrack(track.id)} className="p-2 text-zinc-400 hover:text-red-500 transition-colors"><Trash2 size={18} /></button>
                       </div>
                     </div>
                   ))
@@ -566,7 +593,7 @@ export default function AdminPanel({ tracks, onClose }: AdminPanelProps) {
                       </div>
                       <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                         <button onClick={() => handleEditArtist(artist)} className="p-2 text-zinc-400 hover:text-emerald-500 transition-colors"><Edit2 size={18} /></button>
-                        <button onClick={() => deleteArtist(artist.id)} className="p-2 text-zinc-400 hover:text-red-500 transition-colors"><Trash2 size={18} /></button>
+                        <button onClick={() => handleDeleteArtist(artist.id)} className="p-2 text-zinc-400 hover:text-red-500 transition-colors"><Trash2 size={18} /></button>
                       </div>
                     </div>
                   ))
@@ -583,7 +610,7 @@ export default function AdminPanel({ tracks, onClose }: AdminPanelProps) {
                       </div>
                       <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                         <button onClick={() => handleEditCategory(category)} className="p-2 text-zinc-400 hover:text-emerald-500 transition-colors"><Edit2 size={18} /></button>
-                        <button onClick={() => deleteCategory(category.id)} className="p-2 text-zinc-400 hover:text-red-500 transition-colors"><Trash2 size={18} /></button>
+                        <button onClick={() => handleDeleteCategory(category.id)} className="p-2 text-zinc-400 hover:text-red-500 transition-colors"><Trash2 size={18} /></button>
                       </div>
                     </div>
                   ))
