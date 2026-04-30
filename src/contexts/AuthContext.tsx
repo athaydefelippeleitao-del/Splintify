@@ -9,6 +9,8 @@ interface AuthContextType {
   isAdmin: boolean;
   loading: boolean;
   login: () => Promise<void>;
+  loginWithEmail: (e: string, p: string) => Promise<{error: any}>;
+  signUpWithEmail: (e: string, p: string, n: string) => Promise<{error: any}>;
   logout: () => Promise<void>;
 }
 
@@ -21,7 +23,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Pega sessão existente
     supabase.auth.getSession().then(async ({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
@@ -32,7 +33,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setLoading(false);
     });
 
-    // Escuta mudanças de auth
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
       setSession(session);
       setUser(session?.user ?? null);
@@ -51,10 +51,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const login = async () => {
     await supabase.auth.signInWithOAuth({
       provider: 'google',
-      options: {
-        redirectTo: window.location.origin,
-      },
+      options: { redirectTo: window.location.origin },
     });
+  };
+
+  const loginWithEmail = async (email: string, password: string) => {
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    return { error };
+  };
+
+  const signUpWithEmail = async (email: string, password: string, name: string) => {
+    const { error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: { data: { full_name: name } }
+    });
+    return { error };
   };
 
   const logout = async () => {
@@ -62,7 +74,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, session, isAdmin, loading, login, logout }}>
+    <AuthContext.Provider value={{ user, session, isAdmin, loading, login, loginWithEmail, signUpWithEmail, logout }}>
       {children}
     </AuthContext.Provider>
   );

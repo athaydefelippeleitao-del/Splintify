@@ -15,7 +15,9 @@ import DetailPanel from './components/DetailPanel';
 import PlaylistModal from './components/PlaylistModal';
 import { motion, AnimatePresence } from 'motion/react';
 import { X, Home, Search as SearchIcon, Library, Plus } from 'lucide-react';
-
+import { useAuth } from './contexts/AuthContext';
+import LoadingScreen from './components/LoadingScreen';
+import AuthScreen from './components/AuthScreen';
 function AppContent() {
   const [tracks, setTracks] = useState<Track[]>(TRACKS);
   const [artists, setArtists] = useState<Artist[]>([]);
@@ -514,10 +516,33 @@ function AppContent() {
   );
 }
 
+function AppRouter() {
+  const { user, loading } = useAuth();
+  const [showLoading, setShowLoading] = useState(true);
+
+  useEffect(() => {
+    // Artificial delay to ensure the cool animation plays for at least 2 seconds
+    const timer = setTimeout(() => {
+      setShowLoading(false);
+    }, 2000);
+    return () => clearTimeout(timer);
+  }, []);
+
+  if (loading || showLoading) {
+    return <LoadingScreen />;
+  }
+
+  if (!user) {
+    return <AuthScreen />;
+  }
+
+  return <AppContent />;
+}
+
 export default function App() {
   return (
     <AuthProvider>
-      <AppContent />
+      <AppRouter />
     </AuthProvider>
   );
 }
