@@ -316,7 +316,8 @@ export async function checkIfAdmin(uid: string): Promise<boolean> {
 
 export async function makeAdmin(uid: string): Promise<void> {
   const { error } = await supabase.from('admins').insert({ user_id: uid });
-  if (error) {
+  // Ignora o erro 23505 (violação de chave única) pois significa que já é admin
+  if (error && error.code !== '23505') {
     console.error('[Supabase] makeAdmin error:', error);
     throw new Error('Falha ao promover a administrador.');
   }
