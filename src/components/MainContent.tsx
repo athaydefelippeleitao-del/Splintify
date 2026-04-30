@@ -95,7 +95,7 @@ export default function MainContent({
   };
 
   const handleActivateAdmin = async () => {
-    if (adminCode === 'SPLINTIFY_ADMIN') {
+    if (adminCode.trim() === 'SPLINTIFY_ADMIN') {
       try {
         if (user) {
           await makeAdmin(user.id);
