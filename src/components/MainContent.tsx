@@ -5,6 +5,7 @@ import { CATEGORIES, PLAYLISTS } from '../constants';
 import { getMoodPlaylist } from '../services/gemini';
 import { Track, Playlist, Artist, Category } from '../types';
 import { useAuth } from '../contexts/AuthContext';
+import { uploadAvatar, makeAdmin } from '../services/tracksService';
 import AdminPanel from './AdminPanel';
 import TrackContextMenu from './TrackContextMenu';
 
@@ -55,7 +56,7 @@ export default function MainContent({
   userPlan,
   onPlanChange
 }: MainContentProps) {
-  const { user, isAdmin, login, logout } = useAuth();
+  const { user, isAdmin, login, logout, updateUserProfile, activateAdmin } = useAuth();
   const [mood, setMood] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
   const [isAdminPanelOpen, setIsAdminPanelOpen] = useState(false);
@@ -63,6 +64,9 @@ export default function MainContent({
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   const [isPrivateSession, setIsPrivateSession] = useState(false);
   const [isAccountEditing, setIsAccountEditing] = useState(false);
+  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
+  const [adminCode, setAdminCode] = useState('');
+  const [adminError, setAdminError] = useState('');
   const [tempBirthDate, setTempBirthDate] = useState(birthDate);
   const [tempCountry, setTempCountry] = useState(country);
   const [searchQuery, setSearchQuery] = useState('');
@@ -73,6 +77,39 @@ export default function MainContent({
     onBirthDateChange(tempBirthDate);
     onCountryChange(tempCountry);
     setIsAccountEditing(false);
+  };
+
+  const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !user) return;
+    
+    setIsUploadingAvatar(true);
+    try {
+      const url = await uploadAvatar(file, user.id);
+      await updateUserProfile(url);
+    } catch (err) {
+      alert("Erro ao fazer upload da imagem.");
+    } finally {
+      setIsUploadingAvatar(false);
+    }
+  };
+
+  const handleActivateAdmin = async () => {
+    if (adminCode === 'SPLINTIFY_ADMIN') {
+      try {
+        if (user) {
+          await makeAdmin(user.id);
+          await activateAdmin();
+          setAdminError('');
+          setAdminCode('');
+          alert("Você agora é um administrador do Splintify!");
+        }
+      } catch (err) {
+        setAdminError("Erro ao promover conta.");
+      }
+    } else {
+      setAdminError("Código inválido.");
+    }
   };
 
   const handleGenerateMood = async () => {
@@ -753,9 +790,9 @@ export default function MainContent({
   const renderProfile = () => (
     <div className="p-4 md:p-8 text-white flex flex-col gap-8 pb-32">
       <div className="flex items-end gap-6 bg-gradient-to-b from-zinc-800 to-transparent p-8 rounded-3xl">
-        <div className="w-48 h-48 rounded-full overflow-hidden shadow-2xl border-4 border-white/10">
-          {user?.photoURL ? (
-            <img src={user.photoURL} alt="" className="w-full h-full object-cover" />
+        <div className="w-48 h-48 rounded-full overflow-hidden shadow-2xl border-4 border-white/10 shrink-0">
+          {(user?.user_metadata?.avatar_url || user?.user_metadata?.picture) ? (
+            <img src={user.user_metadata.avatar_url || user.user_metadata.picture} alt="" className="w-full h-full object-cover" />
           ) : (
             <div className="w-full h-full bg-emerald-500/20 flex items-center justify-center">
               <User size={80} className="text-emerald-500" />
@@ -831,11 +868,30 @@ export default function MainContent({
 
       <div className="grid gap-6">
         <div className="bg-white/5 p-8 rounded-2xl border border-white/5">
-          <h2 className="text-xl font-bold mb-8">Perfil</h2>
+          <div className="flex items-start justify-between mb-8">
+            <h2 className="text-xl font-bold">Perfil</h2>
+            <div className="flex flex-col items-end gap-2">
+              <div className="w-20 h-20 rounded-full overflow-hidden shadow-lg border-2 border-white/10 shrink-0">
+                {(user?.user_metadata?.avatar_url || user?.user_metadata?.picture) ? (
+                  <img src={user.user_metadata.avatar_url || user.user_metadata.picture} alt="" className="w-full h-full object-cover" />
+                ) : (
+                  <div className="w-full h-full bg-emerald-500/20 flex items-center justify-center">
+                    <User size={32} className="text-emerald-500" />
+                  </div>
+                )}
+              </div>
+              {isAccountEditing && (
+                <label className="cursor-pointer bg-white/10 hover:bg-white/20 text-white text-xs px-3 py-1.5 rounded-full font-bold transition-colors">
+                  {isUploadingAvatar ? 'Enviando...' : 'Alterar foto'}
+                  <input type="file" className="hidden" accept="image/*" onChange={handleAvatarChange} disabled={isUploadingAvatar} />
+                </label>
+              )}
+            </div>
+          </div>
           <div className="space-y-6">
             <div className="grid grid-cols-3 border-b border-white/5 pb-4">
               <span className="text-zinc-500 font-medium">Nome de usuário</span>
-              <span className="col-span-2 font-bold">{user?.displayName}</span>
+              <span className="col-span-2 font-bold">{user?.user_metadata?.full_name || user?.email?.split('@')[0]}</span>
             </div>
             <div className="grid grid-cols-3 border-b border-white/5 pb-4">
               <span className="text-zinc-500 font-medium">E-mail</span>
@@ -954,6 +1010,35 @@ export default function MainContent({
           </button>
         </div>
       </div>
+
+      <div className="bg-red-500/5 p-8 rounded-2xl border border-red-500/20 flex flex-col gap-4">
+        <h2 className="text-xl font-bold text-red-500 flex items-center gap-2">
+          Acesso Restrito
+        </h2>
+        <p className="text-sm text-zinc-400">Esta área é reservada para funcionários e administradores do Splintify.</p>
+        {!isAdmin ? (
+          <div className="flex flex-col md:flex-row items-center gap-4 mt-2">
+            <input 
+              type="password" 
+              placeholder="Código de ativação" 
+              value={adminCode}
+              onChange={(e) => setAdminCode(e.target.value)}
+              className="w-full md:w-auto bg-black/40 border border-white/10 rounded-lg px-4 py-2 outline-none text-white focus:border-red-500 transition-colors"
+            />
+            <button 
+              onClick={handleActivateAdmin}
+              className="w-full md:w-auto bg-red-500 text-black font-bold px-6 py-2.5 rounded-lg hover:scale-105 transition-transform shrink-0"
+            >
+              Ativar Modo Admin
+            </button>
+            {adminError && <span className="text-red-500 text-sm font-bold">{adminError}</span>}
+          </div>
+        ) : (
+          <div className="flex items-center gap-2 text-emerald-500 font-bold bg-emerald-500/10 p-3 rounded-lg border border-emerald-500/20">
+            <Check size={20} /> Você possui permissões de Administrador.
+          </div>
+        )}
+      </div>
     </div>
   );
 
@@ -1011,14 +1096,14 @@ export default function MainContent({
                 onClick={() => setIsProfileMenuOpen(!isProfileMenuOpen)}
                 className="flex items-center gap-2 bg-black/40 hover:bg-white/10 p-1 md:pr-3 rounded-full transition-colors border border-white/5"
               >
-                {user.photoURL ? (
-                  <img src={user.photoURL} alt="" className="w-8 h-8 rounded-full border border-white/20" />
+                {(user?.user_metadata?.avatar_url || user?.user_metadata?.picture) ? (
+                  <img src={user.user_metadata.avatar_url || user.user_metadata.picture} alt="" className="w-8 h-8 rounded-full border border-white/20 object-cover" />
                 ) : (
-                  <div className="w-8 h-8 rounded-full border border-white/20 bg-emerald-500/20 flex items-center justify-center">
+                  <div className="w-8 h-8 rounded-full border border-white/20 bg-emerald-500/20 flex items-center justify-center shrink-0">
                     <User size={16} className="text-emerald-500" />
                   </div>
                 )}
-                <span className="hidden md:block text-xs font-bold text-white max-w-[100px] truncate">{user.displayName}</span>
+                <span className="hidden md:block text-xs font-bold text-white max-w-[100px] truncate">{user.user_metadata?.full_name || user.email?.split('@')[0]}</span>
               </button>
 
               {isProfileMenuOpen && (

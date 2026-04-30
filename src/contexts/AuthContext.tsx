@@ -12,6 +12,8 @@ interface AuthContextType {
   loginWithEmail: (e: string, p: string) => Promise<{error: any}>;
   signUpWithEmail: (e: string, p: string, n: string) => Promise<{error: any}>;
   logout: () => Promise<void>;
+  updateUserProfile: (photoURL: string) => Promise<{error: any}>;
+  activateAdmin: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -73,8 +75,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await supabase.auth.signOut();
   };
 
+  const updateUserProfile = async (photoURL: string) => {
+    const { data, error } = await supabase.auth.updateUser({
+      data: { avatar_url: photoURL }
+    });
+    if (!error && data.user) {
+      setUser(data.user);
+    }
+    return { error };
+  };
+
+  const activateAdmin = async () => {
+    if (user) {
+      setIsAdmin(true); // Optimistic UI update
+    }
+  };
+
   return (
-    <AuthContext.Provider value={{ user, session, isAdmin, loading, login, loginWithEmail, signUpWithEmail, logout }}>
+    <AuthContext.Provider value={{ 
+      user, session, isAdmin, loading, login, loginWithEmail, signUpWithEmail, logout, updateUserProfile, activateAdmin 
+    }}>
       {children}
     </AuthContext.Provider>
   );

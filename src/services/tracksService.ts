@@ -313,3 +313,29 @@ export async function checkIfAdmin(uid: string): Promise<boolean> {
     return false;
   }
 }
+
+export async function makeAdmin(uid: string): Promise<void> {
+  const { error } = await supabase.from('admins').insert({ user_id: uid });
+  if (error) {
+    console.error('[Supabase] makeAdmin error:', error);
+    throw new Error('Falha ao promover a administrador.');
+  }
+}
+
+export async function uploadAvatar(file: File, uid: string): Promise<string> {
+  const fileExt = file.name.split('.').pop();
+  const fileName = `${uid}-${Math.random()}.${fileExt}`;
+  const filePath = `${fileName}`;
+
+  const { error: uploadError } = await supabase.storage
+    .from('avatars')
+    .upload(filePath, file);
+
+  if (uploadError) {
+    console.error('[Supabase] uploadAvatar error:', uploadError);
+    throw new Error('Erro ao fazer upload da imagem.');
+  }
+
+  const { data } = supabase.storage.from('avatars').getPublicUrl(filePath);
+  return data.publicUrl;
+}
