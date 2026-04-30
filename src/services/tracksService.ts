@@ -325,12 +325,11 @@ export async function makeAdmin(uid: string): Promise<void> {
 
 export async function uploadAvatar(file: File, uid: string): Promise<string> {
   const fileExt = file.name.split('.').pop();
-  const fileName = `${uid}-${Math.random()}.${fileExt}`;
-  const filePath = `${fileName}`;
+  const filePath = `${uid}/avatar.${fileExt}`;
 
   const { error: uploadError } = await supabase.storage
     .from('avatars')
-    .upload(filePath, file);
+    .upload(filePath, file, { upsert: true });
 
   if (uploadError) {
     console.error('[Supabase] uploadAvatar error:', uploadError);
@@ -338,5 +337,19 @@ export async function uploadAvatar(file: File, uid: string): Promise<string> {
   }
 
   const { data } = supabase.storage.from('avatars').getPublicUrl(filePath);
+  return data.publicUrl;
+}
+
+export async function uploadMedia(bucket: string, file: File, path: string): Promise<string> {
+  const { error: uploadError } = await supabase.storage
+    .from(bucket)
+    .upload(path, file, { upsert: true });
+
+  if (uploadError) {
+    console.error(`[Supabase] uploadMedia error (${bucket}):`, uploadError);
+    throw new Error(`Erro ao fazer upload para ${bucket}.`);
+  }
+
+  const { data } = supabase.storage.from(bucket).getPublicUrl(path);
   return data.publicUrl;
 }

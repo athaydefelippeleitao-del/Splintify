@@ -1,6 +1,6 @@
 import { Plus, Trash2, Edit2, X, Music, User, Flame, ChevronLeft, Palette, LayoutDashboard, Users, DollarSign, ArrowUpRight, TrendingUp } from 'lucide-react';
 import React, { useState, useEffect } from 'react';
-import { addTrack, deleteTrack, updateTrack, addArtist, deleteArtist, updateArtist, subscribeToArtists, subscribeToCategories, addCategory, updateCategory, deleteCategory } from '../services/tracksService';
+import { addTrack, deleteTrack, updateTrack, addArtist, deleteArtist, updateArtist, subscribeToArtists, subscribeToCategories, addCategory, updateCategory, deleteCategory, uploadMedia } from '../services/tracksService';
 import { Track, Artist, Category } from '../types';
 import { CATEGORIES } from '../constants';
 
@@ -19,6 +19,9 @@ export default function AdminPanel({ tracks, onClose }: AdminPanelProps) {
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
   const [artists, setArtists] = useState<Artist[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
+  const [trackFile, setTrackFile] = useState<File | null>(null);
+  const [coverFile, setCoverFile] = useState<File | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
 
   const [trackFormData, setTrackFormData] = useState<Omit<Track, 'id'>>({
     title: '',
@@ -224,14 +227,33 @@ export default function AdminPanel({ tracks, onClose }: AdminPanelProps) {
 
   const handleTrackSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setIsUploading(true);
     try {
+      let finalTrackData = { ...trackFormData };
+      
+      if (coverFile) {
+        const fileExt = coverFile.name.split('.').pop();
+        const path = `covers/${Date.now()}.${fileExt}`;
+        const url = await uploadMedia('tracks-covers', coverFile, path);
+        finalTrackData.cover = url;
+      }
+      
+      if (trackFile) {
+        const fileExt = trackFile.name.split('.').pop();
+        const path = `audio/${Date.now()}.${fileExt}`;
+        const url = await uploadMedia('tracks-audio', trackFile, path);
+        finalTrackData.audioUrl = url;
+      }
+
       if (editingTrack) {
-        await updateTrack(editingTrack.id, trackFormData);
+        await updateTrack(editingTrack.id, finalTrackData);
       } else {
-        await addTrack(trackFormData);
+        await addTrack(finalTrackData);
       }
       setIsAdding(false);
       setEditingTrack(null);
+      setTrackFile(null);
+      setCoverFile(null);
       setTrackFormData({
         title: '',
         artist: '',
@@ -244,6 +266,8 @@ export default function AdminPanel({ tracks, onClose }: AdminPanelProps) {
       });
     } catch (err) {
       alert("Erro ao salvar música.");
+    } finally {
+      setIsUploading(false);
     }
   };
 
@@ -394,12 +418,18 @@ export default function AdminPanel({ tracks, onClose }: AdminPanelProps) {
                     </datalist>
                   </div>
                   <div className="space-y-2 md:col-span-2">
-                    <label className="text-sm font-medium text-zinc-400">URL da Capa (Foto da Música)</label>
-                    <input type="url" required className="w-full bg-black/40 border border-white/10 rounded-lg p-3 outline-none focus:border-emerald-500" value={trackFormData.cover} onChange={e => setTrackFormData({ ...trackFormData, cover: e.target.value })} />
+                    <label className="text-sm font-medium text-zinc-400">URL da Capa (Foto da Música) ou Arquivo</label>
+                    <div className="flex flex-col md:flex-row gap-2">
+                      <input type="url" className="flex-1 bg-black/40 border border-white/10 rounded-lg p-3 outline-none focus:border-emerald-500" value={trackFormData.cover} onChange={e => setTrackFormData({ ...trackFormData, cover: e.target.value })} placeholder="Ou cole a URL aqui..." required={!coverFile && !trackFormData.cover} />
+                      <input type="file" accept="image/*" onChange={e => setCoverFile(e.target.files?.[0] || null)} className="flex-1 bg-black/40 border border-white/10 rounded-lg p-2 text-sm text-zinc-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-emerald-500/10 file:text-emerald-500 hover:file:bg-emerald-500/20" />
+                    </div>
                   </div>
                   <div className="space-y-2 md:col-span-2">
-                    <label className="text-sm font-medium text-zinc-400">URL do Áudio (Arquivo MP3)</label>
-                    <input type="url" className="w-full bg-black/40 border border-white/10 rounded-lg p-3 outline-none focus:border-emerald-500" value={trackFormData.audioUrl} onChange={e => setTrackFormData({ ...trackFormData, audioUrl: e.target.value })} placeholder="https://exemplo.com/musica.mp3" />
+                    <label className="text-sm font-medium text-zinc-400">URL do Áudio (Arquivo MP3) ou Arquivo</label>
+                    <div className="flex flex-col md:flex-row gap-2">
+                      <input type="url" className="flex-1 bg-black/40 border border-white/10 rounded-lg p-3 outline-none focus:border-emerald-500" value={trackFormData.audioUrl} onChange={e => setTrackFormData({ ...trackFormData, audioUrl: e.target.value })} placeholder="Ou cole a URL aqui..." />
+                      <input type="file" accept="audio/*" onChange={e => setTrackFile(e.target.files?.[0] || null)} className="flex-1 bg-black/40 border border-white/10 rounded-lg p-2 text-sm text-zinc-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-emerald-500/10 file:text-emerald-500 hover:file:bg-emerald-500/20" />
+                    </div>
                   </div>
                   <div className="space-y-2">
                     <label className="text-sm font-medium text-zinc-400">Duração (segundos)</label>
@@ -418,8 +448,10 @@ export default function AdminPanel({ tracks, onClose }: AdminPanelProps) {
                   </div>
                 </div>
                 <div className="flex gap-4 pt-4">
-                  <button type="submit" className="flex-1 bg-emerald-500 text-black font-bold py-3 rounded-lg hover:bg-emerald-400 transition-colors">{editingTrack ? 'Salvar Alterações' : 'Adicionar Música'}</button>
-                  <button type="button" onClick={() => { setIsAdding(false); setEditingTrack(null); }} className="px-6 border border-white/10 py-3 rounded-lg hover:bg-white/5">Cancelar</button>
+                  <button type="submit" disabled={isUploading} className="flex-1 bg-emerald-500 text-black font-bold py-3 rounded-lg hover:bg-emerald-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                    {isUploading ? 'Fazendo Upload...' : (editingTrack ? 'Salvar Alterações' : 'Adicionar Música')}
+                  </button>
+                  <button type="button" onClick={() => { setIsAdding(false); setEditingTrack(null); setTrackFile(null); setCoverFile(null); }} className="px-6 border border-white/10 py-3 rounded-lg hover:bg-white/5">Cancelar</button>
                 </div>
               </form>
             ) : activeTab === 'artists' ? (
