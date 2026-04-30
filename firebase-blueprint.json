@@ -1,0 +1,73 @@
+{
+  "entities": {
+    "Track": {
+      "title": "Track",
+      "description": "A music track in the library",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string" },
+        "artist": { "type": "string" },
+        "album": { "type": "string" },
+        "cover": { "type": "string" },
+        "duration": { "type": "number" },
+        "genre": { "type": "string" },
+        "isHit": { "type": "boolean" },
+        "audioUrl": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["title", "artist", "album", "cover", "duration", "genre"]
+    },
+    "Artist": {
+      "title": "Artist",
+      "description": "A music artist",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "genre": { "type": "string" },
+        "photo": { "type": "string" },
+        "bio": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["name", "genre", "photo"]
+    },
+    "Admin": {
+      "title": "Admin",
+      "description": "User with administrative privileges",
+      "type": "object",
+      "properties": {
+        "email": { "type": "string" },
+        "uid": { "type": "string" }
+      },
+      "required": ["email", "uid"]
+    },
+    "Category": {
+      "title": "Category",
+      "description": "A music genre or rhythm category",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "color": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["name", "color"]
+    }
+  },
+  "firestore": {
+    "tracks": {
+      "schema": "Track",
+      "description": "Collection of all music tracks"
+    },
+    "artists": {
+      "schema": "Artist",
+      "description": "Collection of music artists"
+    },
+    "admins": {
+      "schema": "Admin",
+      "description": "Registry of admin users"
+    },
+    "categories": {
+      "schema": "Category",
+      "description": "Collection of music rhythms/genres"
+    }
+  }
+}
