@@ -55,7 +55,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     });
 
-    return () => { subscription.unsubscribe(); };
+    // SAFETY NET: Força o loading para falso após 5 segundos se algo travar silenciosamente
+    const safetyTimeout = setTimeout(() => {
+      setLoading(false);
+    }, 5000);
+
+    return () => { 
+      subscription.unsubscribe(); 
+      clearTimeout(safetyTimeout);
+    };
   }, []);
 
   const login = async () => {
