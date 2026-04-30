@@ -39,15 +39,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      if (session?.user) {
-        const admin = await checkIfAdmin(session.user.id);
-        setIsAdmin(admin);
-      } else {
-        setIsAdmin(false);
+      try {
+        setSession(session);
+        setUser(session?.user ?? null);
+        if (session?.user) {
+          const admin = await checkIfAdmin(session.user.id);
+          setIsAdmin(admin);
+        } else {
+          setIsAdmin(false);
+        }
+      } catch (err) {
+        console.error("[AuthContext] Error in onAuthStateChange:", err);
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     });
 
     return () => { subscription.unsubscribe(); };
