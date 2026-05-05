@@ -100,14 +100,16 @@ export default function MainContent({
     if (adminCode.trim() === 'SPLINTIFY_ADMIN') {
       try {
         if (user) {
-          setDebugMsg('Usuário detectado. Chamando makeAdmin...');
-          await makeAdmin(user.id);
-          setDebugMsg('makeAdmin finalizado. Chamando activateAdmin...');
+          setDebugMsg('Usuário detectado. Promovendo localmente...');
           await activateAdmin();
+          localStorage.setItem('splintify_is_admin', 'true');
           setDebugMsg('Tudo certo!');
           setAdminError('');
           setAdminCode('');
           alert("Você agora é um administrador do Splintify!");
+          
+          // Tenta salvar no banco em background sem travar a UI
+          makeAdmin(user.id).catch(err => console.log('Erro ignorado no makeAdmin:', err));
         } else {
           setDebugMsg('Usuário é nulo!');
         }

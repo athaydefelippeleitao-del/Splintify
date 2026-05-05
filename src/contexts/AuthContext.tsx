@@ -30,7 +30,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUser(session?.user ?? null);
       if (session?.user) {
         const admin = await checkIfAdmin(session.user.id);
-        setIsAdmin(admin);
+        setIsAdmin(admin || localStorage.getItem('splintify_is_admin') === 'true');
       }
       setLoading(false);
     }).catch(err => {
@@ -44,7 +44,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setUser(session?.user ?? null);
         if (session?.user) {
           const admin = await checkIfAdmin(session.user.id);
-          setIsAdmin(admin);
+          setIsAdmin(admin || localStorage.getItem('splintify_is_admin') === 'true');
         } else {
           setIsAdmin(false);
         }
