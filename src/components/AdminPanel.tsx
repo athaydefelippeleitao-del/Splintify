@@ -1,5 +1,5 @@
 import { Plus, Trash2, Edit2, X, Music, User, Flame, ChevronLeft, Palette, LayoutDashboard, Users, DollarSign, ArrowUpRight, TrendingUp } from 'lucide-react';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Component, ErrorInfo, ReactNode } from 'react';
 import { addTrack, deleteTrack, updateTrack, addArtist, deleteArtist, updateArtist, subscribeToArtists, subscribeToCategories, addCategory, updateCategory, deleteCategory, uploadMedia } from '../services/tracksService';
 import { Track, Artist, Category } from '../types';
 import { CATEGORIES } from '../constants';
@@ -10,6 +10,35 @@ interface AdminPanelProps {
 }
 
 type Tab = 'dashboard' | 'tracks' | 'artists' | 'categories';
+
+class AdminErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean, error: Error | null }> {
+  constructor(props: { children: ReactNode }) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+  static getDerivedStateFromError(error: Error) {
+    return { hasError: true, error };
+  }
+  componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+    console.error("AdminPanel Error:", error, errorInfo);
+  }
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="fixed inset-0 bg-black z-[100] flex flex-col items-center justify-center p-8 text-white">
+          <h1 className="text-red-500 text-3xl font-bold mb-4">Erro no Painel Admin</h1>
+          <p className="text-zinc-300 font-mono bg-zinc-900 p-4 rounded-lg w-full max-w-4xl overflow-auto whitespace-pre-wrap border border-red-500/30">
+            {this.state.error?.message}
+            {'\n\n'}
+            {this.state.error?.stack}
+          </p>
+          <button onClick={() => window.location.reload()} className="mt-8 border border-white text-white px-6 py-2 rounded-full font-bold">Recarregar Página</button>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
 
 export default function AdminPanel({ tracks, onClose }: AdminPanelProps) {
   const [activeTab, setActiveTab] = useState<Tab>('dashboard');
@@ -371,8 +400,9 @@ export default function AdminPanel({ tracks, onClose }: AdminPanelProps) {
   };
 
   return (
-    <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[60] flex items-center justify-center p-0 md:p-4">
-      <div className="bg-zinc-900 w-full h-full md:h-auto md:max-w-4xl md:max-h-[90vh] md:rounded-2xl overflow-hidden flex flex-col border-white/10 shadow-2xl">
+    <AdminErrorBoundary>
+      <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[60] flex items-center justify-center p-0 md:p-4">
+        <div className="bg-zinc-900 w-full h-full md:h-auto md:max-w-4xl md:max-h-[90vh] md:rounded-2xl overflow-hidden flex flex-col border-white/10 shadow-2xl">
         <div className="p-4 md:p-6 border-b border-white/10 flex items-center justify-between">
           <div className="flex items-center gap-2 md:gap-6">
             <button onClick={onClose} className="md:hidden p-2 -ml-2 text-zinc-400 hover:text-white">
@@ -620,6 +650,6 @@ export default function AdminPanel({ tracks, onClose }: AdminPanelProps) {
           )}
         </div>
       </div>
-    </div>
+    </AdminErrorBoundary>
   );
 }
